@@ -47,8 +47,8 @@ export const listMembers = asyncHandler(async (req, res) => {
 export const createMember = asyncHandler(async (req, res) => {
   const { fullName, fatherName, address, className, institution, phone, guardianPhone, cnicOrBForm, dateOfBirth, unit, joinDate, status, notes } = req.body;
 
-  if (!fullName || !address || !className || !phone || !unit) {
-    return res.status(400).json({ message: "Full name, address, class, phone, and unit are required." });
+  if (!fullName || !address || !className || !unit) {
+    return res.status(400).json({ message: "Full name, address, class, and unit are required." });
   }
 
   const scope = await unitScope(unit);
@@ -110,6 +110,18 @@ export const updateMember = asyncHandler(async (req, res) => {
   await member.populate("unit", "name code");
 
   res.json({ member });
+});
+
+export const deleteMember = asyncHandler(async (req, res) => {
+  const member = await Member.findById(req.params.id);
+  if (!member) return res.status(404).json({ message: "Member not found." });
+
+  if (!canAccessScope(req.user, "unit", member.zone, member.unit)) {
+    return res.status(403).json({ message: "You cannot delete this member." });
+  }
+
+  await member.deleteOne();
+  res.json({ message: "Member deleted." });
 });
 
 export const setShaheenStatus = asyncHandler(async (req, res) => {
