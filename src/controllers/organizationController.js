@@ -169,6 +169,16 @@ export const updateUnit = asyncHandler(async (req, res) => {
   for (const field of allowed) {
     if (req.body[field] !== undefined) unit[field] = req.body[field];
   }
+
+  if (req.body.zone && String(req.body.zone) !== String(unit.zone)) {
+    if (!canCreateStructure(req.user, "unit", req.body.zone)) {
+      return res.status(403).json({ message: "You cannot move units to this zone." });
+    }
+    const zoneDoc = await Zone.findById(req.body.zone);
+    if (!zoneDoc) return res.status(404).json({ message: "Zone not found." });
+    unit.zone = zoneDoc._id;
+  }
+
   await unit.save();
   await unit.populate("zone", "name code");
 

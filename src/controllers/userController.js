@@ -87,6 +87,33 @@ export const createUser = asyncHandler(async (req, res) => {
   res.status(201).json({ user: serialize(user) });
 });
 
+export const updateOwnProfile = asyncHandler(async (req, res) => {
+  const { name, email, phone } = req.body;
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    return res.status(404).json({ message: "User not found." });
+  }
+
+  if (!name || !email) {
+    return res.status(400).json({ message: "Name and email are required." });
+  }
+
+  const duplicate = await User.findOne({ email: email.toLowerCase(), _id: { $ne: user._id } });
+  if (duplicate) {
+    return res.status(409).json({ message: "This email is already used by another account." });
+  }
+
+  user.name = name;
+  user.email = email;
+  user.phone = phone;
+  await user.save();
+  await user.populate("zone", "name code");
+  await user.populate("unit", "name code");
+
+  res.json({ user: serialize(user), creatableRoles: roleOptionsForUser(user) });
+});
+
 export const updateUserStatus = asyncHandler(async (req, res) => {
   const { isActive } = req.body;
   const target = await User.findById(req.params.id);
